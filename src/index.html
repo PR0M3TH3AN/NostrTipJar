@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nostr Tip Jar</title>
+    <title>Lightning Tip Jar</title>
 
     <!-- TailwindCSS (Play CDN for demo) -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -59,12 +59,11 @@
       }
 
       function parseUrl() {
-        const parts = location.pathname.split("/").filter(Boolean);
-        let npub = null;
-        if (parts[0] === "n" && parts[1]) npub = parts[1];
-        else npub = new URLSearchParams(location.search).get("n");
-        const idx = location.pathname.indexOf("/n/");
-        const base = idx > 0 ? location.pathname.slice(0, idx) : location.pathname;
+        // Always use query parameter 'n' for npub
+        const params = new URLSearchParams(window.location.search);
+        const npub = params.get("n");
+        // Base is the URL of the HTML file (strip query and hash)
+        const base = window.location.href.split('?')[0].split('#')[0];
         return { npub, base };
       }
 
@@ -83,9 +82,10 @@
         document.getElementById('form').onsubmit = e => {
           e.preventDefault();
           const v = document.getElementById('input').value.trim();
-          if (!v.startsWith('npub')) return renderLanding(base, 'npub must start with "npub".');
-          const isFile = /\.html?$/.test(base);
-          location.href = isFile ? `${base}?n=${v}` : `${base.replace(/\/$/, '')}/n/${v}`;
+          if (!v.startsWith('npub')) { renderLanding(base, 'npub must start with "npub".'); return; }
+          const baseUrl = window.location.href.split('?')[0].split('#')[0];
+          log('Redirecting to', `${baseUrl}?n=${v}`);
+          location.href = `${baseUrl}?n=${v}`;
         };
       }
 
