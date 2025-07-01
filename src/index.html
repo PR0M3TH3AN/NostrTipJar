@@ -12,11 +12,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
-      :root { --accent-purple: #a855f7; --accent-orange: #f97316; }
+      :root {
+        --accent-purple: #a855f7;
+        --accent-orange: #f97316;
+      }
+      /* Body is now a column so the footer lives at the very bottom */
       body {
         display: flex;
+        flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: center; /* keeps <main> vertically centred when possible */
         min-height: 100vh;
         margin: 0;
       }
@@ -30,6 +35,16 @@
 
   <body class="bg-gray-900 text-gray-200">
     <main id="app" class="w-full max-w-sm p-6 space-y-6 text-center"></main>
+
+    <!-- Subtle footer on every page -->
+    <footer class="mt-auto mb-2 text-center text-xs text-gray-500 opacity-70">
+      Enjoying this?&nbsp;
+      <a
+        href="https://nostrtipjar.netlify.app/?n=npub15jnttpymeytm80hatjqcvhhqhzrhx6gxp8pq0wn93rhnu8s9h9dsha32lx"
+        class="underline hover:text-purple-400"
+        >Leave&nbsp;a&nbsp;tip!</a
+      >
+    </footer>
 
     <script type="module">
       import { nip19, SimplePool } from "https://esm.sh/nostr-tools@1.7.5?bundle";
@@ -46,8 +61,10 @@
       const log = (...a) => console.log("[tipjar]", ...a);
       const warn = (...a) => console.warn("[tipjar]", ...a);
       const error = (...a) => console.error("[tipjar]", ...a);
-      window.addEventListener("error", e => error("Uncaught:", e.message));
-      window.addEventListener("unhandledrejection", e => error("Promise rejection:", e.reason));
+      window.addEventListener("error", (e) => error("Uncaught:", e.message));
+      window.addEventListener("unhandledrejection", (e) =>
+        error("Promise rejection:", e.reason)
+      );
 
       init();
 
@@ -63,34 +80,37 @@
         const params = new URLSearchParams(window.location.search);
         const npub = params.get("n");
         // Base is the URL of the HTML file (strip query and hash)
-        const base = window.location.href.split('?')[0].split('#')[0];
+        const base = window.location.href.split("?")[0].split("#")[0];
         return { npub, base };
       }
 
-      function renderLanding(base, msg = '') {
-        document.getElementById('app').innerHTML = `
+      function renderLanding(base, msg = "") {
+        document.getElementById("app").innerHTML = `
           <div class="space-y-6">
             <h1 class="text-3xl font-extrabold accent-gradient">Lightning Tip Jar</h1>
             <p class="text-gray-400">Enter a Nostr <span class="font-mono">npub…</span> to create a tipping page.</p>
-            ${msg ? `<p class='text-red-500'>${msg}</p>` : ''}
+            ${msg ? `<p class='text-red-500'>${msg}</p>` : ""}
             <form id="form" class="space-y-4">
               <input id="input" type="text" placeholder="npub1…" required class="w-full px-4 py-2 rounded-lg bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-600" />
               <button class="w-full py-2 rounded-lg bg-gradient-to-r from-purple-600 to-orange-500 text-white font-semibold transition active:scale-95" type="submit">Generate</button>
             </form>
             <footer class="text-xs text-gray-500">Client-side • No servers • Lightning ⚡</footer>
           </div>`;
-        document.getElementById('form').onsubmit = e => {
+        document.getElementById("form").onsubmit = (e) => {
           e.preventDefault();
-          const v = document.getElementById('input').value.trim();
-          if (!v.startsWith('npub')) { renderLanding(base, 'npub must start with "npub".'); return; }
-          const baseUrl = window.location.href.split('?')[0].split('#')[0];
-          log('Redirecting to', `${baseUrl}?n=${v}`);
+          const v = document.getElementById("input").value.trim();
+          if (!v.startsWith("npub")) {
+            renderLanding(base, 'npub must start with "npub".');
+            return;
+          }
+          const baseUrl = window.location.href.split("?")[0].split("#")[0];
+          log("Redirecting to", `${baseUrl}?n=${v}`);
           location.href = `${baseUrl}?n=${v}`;
         };
       }
 
       async function renderTipJar(npub) {
-        const app = document.getElementById('app');
+        const app = document.getElementById("app");
         app.innerHTML = `
           <img id="avatar" class="w-24 h-24 rounded-full mx-auto hidden" alt="Avatar" />
           <h1 id="name" class="text-2xl font-extrabold accent-gradient mb-2">Loading…</h1>
@@ -103,33 +123,40 @@
         try {
           const dec = nip19.decode(npub);
           hex = dec.data;
-          log('Decoded hex pubkey', hex);
+          log("Decoded hex pubkey", hex);
         } catch {
-          return fatal(app, 'Bad npub format');
+          return fatal(app, "Bad npub format");
         }
 
         const fallback = `${npub}@npub.cash`;
-        let meta = null, ln = fallback;
+        let meta = null,
+          ln = fallback;
 
         const pool = new SimplePool();
         const sub = pool.sub(RELAYS, [{ kinds: [0], authors: [hex], limit: 1 }]);
-        const timer = setTimeout(() => { warn('Relay timeout'); finalize(); }, TIMEOUT_MS);
+        const timer = setTimeout(() => {
+          warn("Relay timeout");
+          finalize();
+        }, TIMEOUT_MS);
 
-        sub.on('event', ev => {
+        sub.on("event", (ev) => {
           clearTimeout(timer);
           try {
-            meta = JSON.parse(ev.content || '{}');
+            meta = JSON.parse(ev.content || "{}");
             ln = meta.lud16 || meta.lud06 || fallback;
-            log('Profile metadata', meta);
+            log("Profile metadata", meta);
           } catch (e) {
-            error('Failed to parse metadata JSON', e);
+            error("Failed to parse metadata JSON", e);
           }
           finalize();
         });
-        sub.on('eose', () => warn('EOSE reached, no event'));
+        sub.on("eose", () => warn("EOSE reached, no event"));
 
         function finalize() {
-          try { sub.unsub(); pool.close(); } catch {};
+          try {
+            sub.unsub();
+            pool.close();
+          } catch {}
           buildUI(app, meta, ln);
         }
 
@@ -139,27 +166,34 @@
       }
 
       function buildUI(app, meta, ln) {
-        document.getElementById('name').textContent = meta?.name || 'Lightning Tip Jar';
-        if (meta?.about) document.getElementById('about').textContent = meta.about;
+        document.getElementById("name").textContent =
+          meta?.name || "Lightning Tip Jar";
+        if (meta?.about) document.getElementById("about").textContent = meta.about;
         if (meta?.picture) {
-          const img = document.getElementById('avatar');
+          const img = document.getElementById("avatar");
           img.src = meta.picture;
-          img.classList.remove('hidden');
+          img.classList.remove("hidden");
         }
         if (!meta?.lud16 && !meta?.lud06) {
-          const about = document.getElementById('about');
-          about.textContent += ' (using fallback address)';
+          const about = document.getElementById("about");
+          about.textContent += " (using fallback address)";
         }
-        document.getElementById('addr').textContent = ln;
-        const qrEl = document.getElementById('qrcode');
-        qrEl.innerHTML = '';
-        new QRCode(qrEl, { text: ln, width: 200, height: 200, colorDark: '#111', colorLight: '#fff' });
-        document.getElementById('copy').onclick = () => {
+        document.getElementById("addr").textContent = ln;
+        const qrEl = document.getElementById("qrcode");
+        qrEl.innerHTML = "";
+        new QRCode(qrEl, {
+          text: ln,
+          width: 200,
+          height: 200,
+          colorDark: "#111",
+          colorLight: "#fff",
+        });
+        document.getElementById("copy").onclick = () => {
           navigator.clipboard.writeText(ln).then(() => {
-            const btn = document.getElementById('copy');
+            const btn = document.getElementById("copy");
             const old = btn.textContent;
-            btn.textContent = 'Copied!';
-            setTimeout(() => btn.textContent = old, 1200);
+            btn.textContent = "Copied!";
+            setTimeout(() => (btn.textContent = old), 1200);
           });
         };
       }
