@@ -16,12 +16,12 @@
         --accent-purple: #a855f7;
         --accent-orange: #f97316;
       }
-      /* Body is now a column so the footer lives at the very bottom */
+      /* Keep footer stuck to the bottom while centering main */
       body {
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center; /* keeps <main> vertically centred when possible */
+        justify-content: center;   /* vertically centre <main> when possible */
         min-height: 100vh;
         margin: 0;
       }
@@ -36,13 +36,20 @@
   <body class="bg-gray-900 text-gray-200">
     <main id="app" class="w-full max-w-sm p-6 space-y-6 text-center"></main>
 
-    <!-- Subtle footer on every page -->
+    <!-- Subtle footer with tip-jar & GitHub links -->
     <footer class="mt-auto mb-2 text-center text-xs text-gray-500 opacity-70">
       Enjoying this?&nbsp;
       <a
         href="https://nostrtipjar.netlify.app/?n=npub15jnttpymeytm80hatjqcvhhqhzrhx6gxp8pq0wn93rhnu8s9h9dsha32lx"
         class="underline hover:text-purple-400"
         >Leave&nbsp;a&nbsp;tip!</a
+      >
+      &nbsp;•&nbsp;
+      <a
+        href="https://github.com/PR0M3TH3AN/NostrTipJar"
+        class="underline hover:text-purple-400"
+        target="_blank" rel="noopener"
+        >GitHub</a
       >
     </footer>
 
@@ -76,10 +83,8 @@
       }
 
       function parseUrl() {
-        // Always use query parameter 'n' for npub
         const params = new URLSearchParams(window.location.search);
         const npub = params.get("n");
-        // Base is the URL of the HTML file (strip query and hash)
         const base = window.location.href.split("?")[0].split("#")[0];
         return { npub, base };
       }
